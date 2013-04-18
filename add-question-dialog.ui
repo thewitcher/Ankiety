@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AddQuestionDialog</class>
+ <widget class="QDialog" name="AddQuestionDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>473</width>
+    <height>532</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_4">
+   <item row="0" column="0" colspan="2">
+    <widget class="QGroupBox" name="m_questionTypeGroupBox">
+     <property name="title">
+      <string>Wybierz typ pytania</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QRadioButton" name="m_openedQuestionRadioButton">
+        <property name="text">
+         <string>Otwarte pytanie</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QRadioButton" name="m_closedQuestionRadioButton">
+        <property name="text">
+         <string>Zamknięte pytanie</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QGroupBox" name="m_questionDefinitionGroupBox">
+     <property name="title">
+      <string>Definicja pytania</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="3" column="0">
+       <widget class="QComboBox" name="m_categoryComboBox"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="m_questionTypeLabel">
+        <property name="text">
+         <string>Wpisz treść pytania:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QTextEdit" name="m_questionTextTextEdit"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="m_categoryLabel">
+        <property name="text">
+         <string>Wybierz kategorię:</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QPushButton" name="m_anulujButton">
+     <property name="text">
+      <string>Anuluj dodawanie</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QPushButton" name="m_addQuestionButton">
+     <property name="text">
+      <string>Dodaj pytanie</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QStackedWidget" name="m_questionTypeStackedWidget">
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <widget class="QWidget" name="opened">
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="2" column="0">
+        <widget class="QLineEdit" name="m_newWordStringLineEdit"/>
+       </item>
+       <item row="3" column="0" colspan="2">
+        <widget class="QComboBox" name="m_wordComboBox"/>
+       </item>
+       <item row="4" column="0" colspan="3">
+        <widget class="QListView" name="m_addedWordListView">
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="layoutMode">
+          <enum>QListView::Batched</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" rowspan="2">
+        <widget class="QLabel" name="m_newWordLabel">
+         <property name="text">
+          <string>Dodaj wyraz i jego wagę:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QDoubleSpinBox" name="m_newWordWeightSpinBox">
+         <property name="minimum">
+          <double>-1.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>1.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QPushButton" name="m_addCustomWordButton">
+         <property name="text">
+          <string>Dodaj własny wyraz</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2">
+        <widget class="QPushButton" name="m_addStoredWordButton">
+         <property name="text">
+          <string>Dodaj zdefiniowany wyraz</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="2">
+        <widget class="QPushButton" name="m_deleteMarkedButton">
+         <property name="text">
+          <string>Usuń zaznaczone</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="closed">
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="1" column="0">
+        <widget class="QListView" name="m_answersListView">
+         <property name="contextMenuPolicy">
+          <enum>Qt::CustomContextMenu</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="m_answerLabel">
+         <property name="text">
+          <string>Odpowiedzi:</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
