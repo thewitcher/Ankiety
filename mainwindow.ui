@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>372</width>
-    <height>171</height>
+    <height>204</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,24 +15,31 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+    <item row="1" column="0">
      <widget class="QPushButton" name="m_completeSurvey">
       <property name="text">
        <string>Wypełnij ankietę</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="0">
+    <item row="2" column="0">
      <widget class="QPushButton" name="m_addQuestionButton">
       <property name="text">
        <string>Dodaj pytanie</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
      <widget class="QPushButton" name="m_exitButton">
       <property name="text">
        <string>Wyjście</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QPushButton" name="m_createSurveyButton">
+      <property name="text">
+       <string>Stwórz ankietę</string>
       </property>
      </widget>
     </item>

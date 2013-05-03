@@ -3,211 +3,375 @@
 
 #include <QDebug>
 #include <QMessageBox>
-#include <QAction>
-#include <QStringListModel>
-#include <QMenu>
 
-#include "edit-word-dialog.h"
+#include "Busines_classes/open-question.h"
+#include "Busines_classes/close-question.h"
+#include "Busines_classes/question-database.h"
 
 AddQuestionDialog::AddQuestionDialog( QWidget * parent ):
     QDialog( parent ),
-    ui( new Ui::AddQuestionDialog )
+    ui( new Ui::AddQuestionDialog ),
+    m_pQuestion( NULL ),
+    m_iRowToEditInAnswerListWidget( -1 )
 {
     ui->setupUi( this );
 
     initialize();
-    initializeCategoryComboBox();
-    initializeWordComboBox();
-
     createConnections();
 }
 
 AddQuestionDialog::~AddQuestionDialog()
 {
     delete ui;
+    delete m_pQuestion;
 }
 
 void AddQuestionDialog::initialize()
 {
-    ui->m_closedQuestionRadioButton->setChecked( false );
-    ui->m_openedQuestionRadioButton->setChecked( true );
+    m_eQuestionType = OPEN_QUESTION;
+    ui->m_pOpenQuestionRadioButton->setChecked( true );
+    m_pQuestion = new OpenQuestion;
 
-    ui->m_addedWordListView->setModel( new QStringListModel( this ) );
-    ui->m_answersListView->setModel( new QStringListModel( this ) );
-
-    ui->m_questionTypeStackedWidget->setCurrentIndex( 0 );
+    setTypePage();
 }
 
 void AddQuestionDialog::createConnections()
 {
-    connect(ui->m_closedQuestionRadioButton,SIGNAL(toggled(bool)),this,SLOT(onQuestionTypeChange(bool)));
-    connect(ui->m_anulujButton,SIGNAL(clicked()),this,SLOT(reject()));
-    connect(ui->m_addCustomWordButton,SIGNAL(clicked()),this,SLOT(addCustomWord()));
-    connect(ui->m_deleteMarkedButton,SIGNAL(clicked()),this,SLOT(deleteWordFromList()));
-    connect(ui->m_addedWordListView,SIGNAL(doubleClicked(QModelIndex)),this,SLOT(showEditWordDialog(QModelIndex)));
-    connect(ui->m_addStoredWordButton,SIGNAL(clicked()),this,SLOT(addPredefinedWord()));
-    connect(ui->m_addQuestionButton,SIGNAL(clicked()),this,SLOT(addQuestion()));
-    connect(ui->m_answersListView,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showMenu(QPoint)));
+    connect(ui->m_pAnulujButton,SIGNAL(clicked()),this,SLOT(exit()));
+    connect(ui->m_pNextButton,SIGNAL(clicked()),this,SLOT(next()));
+    connect(ui->m_pBackButton,SIGNAL(clicked()),this,SLOT(back()));
+    connect(ui->m_pCloseQuestionRadioButton,SIGNAL(toggled(bool)),this,SLOT(onTypeChange(bool)));
+    connect(ui->m_pSummarizeButton,SIGNAL(clicked()),this,SLOT(setResultPage()));
+    connect(ui->m_pRemoveButton,SIGNAL(clicked()),this,SLOT(deleteFromAnswerListWidget()));
+    connect(ui->m_pEditButton,SIGNAL(clicked()),this,SLOT(editAnswerFromListWidget()));
 }
 
-void AddQuestionDialog::deleteWordFromList()
+void AddQuestionDialog::onTypeChange( bool closeQuestion )
 {
-    ui->m_addedWordListView->model()->removeRow( ui->m_addedWordListView->currentIndex().row() );
-}
-
-void AddQuestionDialog::onQuestionTypeChange( bool b )
-{
-    if( b == true )
+    if( closeQuestion == true )
     {
-        ui->m_questionTypeStackedWidget->setCurrentIndex( CLOSED );
+        m_eQuestionType = CLOSE_QUESTION;
+
+        if( m_pQuestion != NULL )
+        {
+            delete m_pQuestion;
+        }
+        m_pQuestion = new CloseQuestion;
     }
     else
     {
-        ui->m_questionTypeStackedWidget->setCurrentIndex( OPENED );
-    }
-}
+        m_eQuestionType = OPEN_QUESTION;
 
-void AddQuestionDialog::initializeCategoryComboBox()
-{
-    ui->m_categoryComboBox->addItem( "Inne" );
-    ui->m_categoryComboBox->addItem( "Jakościowe" );
-    ui->m_categoryComboBox->addItem( "Podchwytliwe" );
-    ui->m_categoryComboBox->addItem( "Zaskakujące" );
-    ui->m_categoryComboBox->addItem( "Interesujące" );
-}
-
-void AddQuestionDialog::initializeWordComboBox()
-{
-    ui->m_wordComboBox->addItem( "dobry <0.3>" );
-    ui->m_wordComboBox->addItem( "ciekawy <0.6>" );
-    ui->m_wordComboBox->addItem( "interesujący <0.9>" );
-    ui->m_wordComboBox->addItem( "wspaniały <0.4>" );
-    ui->m_wordComboBox->addItem( "nudny <-0.3>" );
-}
-
-void AddQuestionDialog::addCustomWord()
-{
-    if( ui->m_newWordStringLineEdit->text().isEmpty() == true )
-    {
-        QMessageBox::warning( this, "Brak danych", "Nie można dodać pustego wyrazu" );
-
-        return;
-    }
-
-    QStringListModel * model = qobject_cast<QStringListModel*>(ui->m_addedWordListView->model());
-
-    QString string = ui->m_newWordStringLineEdit->text() + " <" + ui->m_newWordWeightSpinBox->text() + ">";
-
-    if( wasAdded( string ) == true )
-    {
-        QMessageBox::warning( this, "Duplikat", "Taki wyraz istnieje już w liście" );
-
-        return;
-    }
-
-    model->setStringList( model->stringList() << string );
-}
-
-void AddQuestionDialog::showEditWordDialog( QModelIndex index )
-{
-    EditWordDialog eWD( ui->m_addedWordListView->model()->data( index ).toString() );
-    connect(&eWD,SIGNAL(update(QString)),this,SLOT(onListViewUpdate(QString)));
-
-    eWD.exec();
-}
-
-void AddQuestionDialog::onListViewUpdate( const QString & string )
-{
-    if( wasAdded( string ) == true )
-    {
-        QMessageBox::warning( this, "Duplikat", "Taki wyraz istnieje już w liście" );
-
-        return;
-    }
-
-    ui->m_addedWordListView->model()->setData( ui->m_addedWordListView->currentIndex(), string );
-}
-
-bool AddQuestionDialog::wasAdded( const QString & element )
-{
-    QStringListModel * model = qobject_cast<QStringListModel*>( ui->m_addedWordListView->model() );
-
-    for( int i = 0 ; i < model->stringList().size() ; i++ )
-    {
-        if( element.left( element.indexOf( "<" ) - 1 ) == model->stringList().at( i ).left( model->stringList().at( i ).indexOf( "<" ) - 1 ) )
+        if( m_pQuestion != NULL )
         {
-            return true;
+            delete m_pQuestion;
         }
+        m_pQuestion = new OpenQuestion;
     }
-
-    return false;
 }
 
-void AddQuestionDialog::addPredefinedWord()
+void AddQuestionDialog::exit()
 {
-    QString string = ui->m_wordComboBox->currentText();
-
-    if( wasAdded( string ) == true )
-    {
-        QMessageBox::warning( this, "Duplikat", "Taki wyraz istnieje już w liście" );
-
-        return;
-    }
-
-    QStringListModel * model = qobject_cast<QStringListModel*>(ui->m_addedWordListView->model());
-
-    model->setStringList( model->stringList() << string );
+    reject();
 }
 
-void AddQuestionDialog::addQuestion()
+void AddQuestionDialog::next()
 {
-    if( ui->m_questionTextTextEdit->toPlainText().isEmpty() == true )
+    switch( m_eCurrentPage )
     {
-        QMessageBox::warning( this, "Dodawanie pytania", "Nie można dodać pytania bez treści" );
-
-        return;
-    }
-
-    if( ui->m_closedQuestionRadioButton->isChecked() == true )
-    {
-        QStringListModel * model = qobject_cast<QStringListModel*>( ui->m_answersListView->model() );
-
-        if( model->stringList().size() < 2 )
+    case TYPE:
+        setCategoryPage();
+        break;
+    case CATEGORY:
+        setTextPage();
+        m_pQuestion->setCategory( ui->m_pCategoryComboBox->currentText() );
+        break;
+    case TEXT:
+        if( ui->m_pQuestionTextEdit->toPlainText().isEmpty() == false )
         {
-            QMessageBox::warning( this, "Dodawanie pytania", "Musisz dodać co najmniej dwie odpowiedzi zamknięte" );
+            m_pQuestion->setQuestionText( ui->m_pQuestionTextEdit->toPlainText() );
 
-            return;
+            if( m_eQuestionType == OPEN_QUESTION )
+            {
+                setKeyWordPage();
+            }
+            else if( m_eQuestionType == CLOSE_QUESTION )
+            {
+                setAnswerPage();
+            }
         }
+        else
+        {
+            QMessageBox::warning( this, "Ostrzeżenie", "Aby przejść dalej należy dodać treść pytania" );
+        }
+        break;
+    case ANSWER:
+        if( ui->m_pAnswerTextEdit->toPlainText().isEmpty() == false )
+        {
+            addAnswer();
+        }
+        else
+        {
+            QMessageBox::warning( this, "Ostrzeżenie", "Aby przejść dalej należy dodać treść odpowiedzi" );
+        }
+        break;
+    case KEY_WORD:
+        if( ui->m_pKeyWordLineEdit->text().isEmpty() == false )
+        {
+            addKeyWord();
+        }
+        else
+        {
+            QMessageBox::warning( this, "Ostrzeżenie", "Aby przejść dalej należy dodać treść odpowiedzi" );
+        }
+        break;
+    case RESULT:
+        if( m_eQuestionType == OPEN_QUESTION )
+        {
+            QuestionDatabase::addQuestion( m_pQuestion );
+            m_pQuestion = NULL;
+            QMessageBox::information( this, "Sukcses", "Pytanie zostało dodane pomyślnie" );
+            accept();
+        }
+        else if( m_eQuestionType == CLOSE_QUESTION )
+        {
+            CloseQuestion * closeQuestion = dynamic_cast< CloseQuestion * >( m_pQuestion );
+
+            if( closeQuestion != NULL )
+            {
+                if( closeQuestion->hasAtLestTwoAnswers() == false )
+                {
+                    QMessageBox::warning( this, "Ostrzeżenie", "Aby przejść do podsumowania należy dodać co najmniej dwie odpowiedzi zamknięte" );
+                    return;
+                }
+                else
+                {
+                    QuestionDatabase::addQuestion( m_pQuestion );
+                    m_pQuestion = NULL;
+                    QMessageBox::information( this, "Sukcses", "Pytanie zostało dodane pomyślnie" );
+                    accept();
+                }
+            }
+        }
+        break;
     }
-
-    QMessageBox::warning( this, "Dodawanie pytania", "Pytanie zostało dodane pomyślnie" );
-
-    accept();
 }
 
-void AddQuestionDialog::showMenu( QPoint )
+void AddQuestionDialog::back()
 {
-    QMenu menu;
+    switch( m_eCurrentPage )
+    {
+    case TYPE:
+        break;
+    case CATEGORY:
+        setTypePage();
+        break;
+    case TEXT:
+        setCategoryPage();
+        break;
+    case ANSWER:
+    case KEY_WORD:
+        setTextPage();
+        break;
+    case RESULT:
+        setTextPage();
+        break;
+    }
+}
 
-    QAction * addAction = new QAction( "Dodaj odpowiedź", & menu );
-    QAction * deleteAction = new QAction( "Usuń odpowiedź", & menu );
+void AddQuestionDialog::setTypePage()
+{
+    ui->m_pBackButton->setVisible( false );
+    ui->m_pNextButton->setVisible( true );
+    ui->m_pNextButton->setText( "Przejdź do wyboru kategorii" );
+    ui->m_pQuestionTypeStackedWidget->setCurrentIndex( TYPE );
+    m_eCurrentPage = TYPE;
+}
 
-    connect(addAction,SIGNAL(triggered()),this,SLOT(addAnswer()));
-    connect(deleteAction,SIGNAL(triggered()),this,SLOT(deleteAnswer()));
+void AddQuestionDialog::setCategoryPage()
+{
+    getCategoryFromDB();
 
-    menu.addAction( addAction );
-    menu.addAction( deleteAction );
-    menu.exec( QCursor::pos() );
+    ui->m_pBackButton->setVisible( true );
+    ui->m_pBackButton->setText( "Wróć do wyboru typu pytania" );
+    ui->m_pNextButton->setVisible( true );
+    ui->m_pNextButton->setText( "Przejdź do dodawania treści pytania" );
+    ui->m_pQuestionTypeStackedWidget->setCurrentIndex( CATEGORY );
+    m_eCurrentPage = CATEGORY;
+}
+
+void AddQuestionDialog::setTextPage()
+{
+    ui->m_pBackButton->setVisible( true );
+    ui->m_pBackButton->setText( "Wróć do wyboru kategorii" );
+    ui->m_pNextButton->setVisible( true );
+
+    if( m_eQuestionType == OPEN_QUESTION )
+    {
+        ui->m_pNextButton->setText( "Dodaj słowa kluczowe" );
+    }
+    else if( m_eQuestionType == CLOSE_QUESTION )
+    {
+        ui->m_pNextButton->setText( "Dodaj odpowiedzi" );
+    }
+
+    ui->m_pQuestionTypeStackedWidget->setCurrentIndex( TEXT );
+    m_eCurrentPage = TEXT;
+}
+
+void AddQuestionDialog::setAnswerPage()
+{
+    ui->m_pBackButton->setVisible( true );
+    ui->m_pBackButton->setText( "Wróć do dodawania treści pytania" );
+    ui->m_pNextButton->setVisible( true );
+    ui->m_pNextButton->setText( "Dodaj" );
+    ui->m_pQuestionTypeStackedWidget->setCurrentIndex( ANSWER );
+    m_eCurrentPage = ANSWER;
+}
+
+void AddQuestionDialog::setKeyWordPage()
+{
+    ui->m_pBackButton->setVisible( true );
+    ui->m_pBackButton->setText( "Wróć do dodawania treści pytania" );
+    ui->m_pNextButton->setVisible( true );
+    ui->m_pNextButton->setText( "Dodaj kolejne słowo kluczowe" );
+    ui->m_pQuestionTypeStackedWidget->setCurrentIndex( KEY_WORD );
+    m_eCurrentPage = KEY_WORD;
+}
+
+void AddQuestionDialog::setResultPage()
+{
+    if( ui->m_pQuestionTextEdit->toPlainText().isEmpty() == true )
+    {
+        QMessageBox::warning( this, "Ostrzeżenie", "Aby przejść dalej należy dodać treść pytania" );
+
+        return;
+    }
+
+    ui->m_pBackButton->setVisible( true );
+    ui->m_pBackButton->setText( "Wróć do dodawania treści pytania" );
+    ui->m_pNextButton->setVisible( true );
+    ui->m_pQuestionTypeStackedWidget->setCurrentIndex( RESULT );
+    m_eCurrentPage = RESULT;
+
+    if( m_eQuestionType == OPEN_QUESTION )
+    {
+        resultsForOpenQuestion();
+    }
+    else if( m_eQuestionType == CLOSE_QUESTION )
+    {
+        resultsForCloseQuestion();
+    }
+}
+
+void AddQuestionDialog::getCategoryFromDB()
+{
+    ui->m_pCategoryComboBox->addItem( "Inne" );
+    ui->m_pCategoryComboBox->addItem( "Naukowe" );
+    ui->m_pCategoryComboBox->addItem( "Zabawne" );
 }
 
 void AddQuestionDialog::addAnswer()
 {
-    QStringListModel * model = qobject_cast<QStringListModel*>(ui->m_answersListView->model());
+    CloseQuestion * closeQuestion = dynamic_cast< CloseQuestion * >( m_pQuestion );
 
-    model->setStringList( model->stringList() << "Nowa odpowiedź" );
+    closeQuestion->addAnswer( ui->m_pAnswerTextEdit->toPlainText(), m_iRowToEditInAnswerListWidget );
+
+    ui->m_pAnswerTextEdit->clear();
 }
 
-void AddQuestionDialog::deleteAnswer()
+void AddQuestionDialog::addKeyWord()
 {
-    ui->m_answersListView->model()->removeRow( ui->m_answersListView->currentIndex().row() );
+    OpenQuestion * openQuestion = dynamic_cast< OpenQuestion * >( m_pQuestion );
+
+    openQuestion->addKeyWord( ui->m_pKeyWordLineEdit->text(), ui->m_pKeyWordWeightSpinBox->value(), m_iRowToEditInAnswerListWidget );
+
+    ui->m_pKeyWordLineEdit->clear();
+    ui->m_pKeyWordWeightSpinBox->setValue( 0.0 );
+}
+
+void AddQuestionDialog::resultsForCloseQuestion()
+{
+    resultsForBoth();
+
+    CloseQuestion * closeQuestion = dynamic_cast< CloseQuestion * >( m_pQuestion );
+
+    for( int answer = 0 ; answer < closeQuestion->answerCount() ; answer++ )
+    {
+        ui->m_pAnswersListWidget->addItem( closeQuestion->getAnswer( answer ).answerText() );
+    }
+}
+
+void AddQuestionDialog::resultsForOpenQuestion()
+{
+    resultsForBoth();
+
+    OpenQuestion * openQuestion = dynamic_cast< OpenQuestion * >( m_pQuestion );
+
+    for( int key = 0 ; key < openQuestion->keyWordCount() ; key++ )
+    {
+        ui->m_pAnswersListWidget->addItem( openQuestion->getKeyWord( key ).keyWord() + " <" + QString::number( openQuestion->getKeyWord( key ).weight() ) + ">" );
+    }
+}
+
+void AddQuestionDialog::resultsForBoth()
+{
+    ui->m_pAnswersListWidget->clear();
+    m_pQuestion->setQuestionText( ui->m_pQuestionTextEdit->toPlainText() );
+    m_pQuestion->setCategory( ui->m_pCategoryComboBox->currentText() );
+
+    ui->m_pQuestionTextLabel->setText( "Treść pytania: " + m_pQuestion->questionText() );
+    ui->m_pCategoryLabel->setText( "Kategoria pytania: " + m_pQuestion->category() );
+
+    ui->m_pNextButton->setText( "Dodaj pytanie" );
+}
+
+void AddQuestionDialog::deleteFromAnswerListWidget()
+{
+    if( ui->m_pAnswersListWidget->selectedItems().size() < 1 )
+    {
+        QMessageBox::warning( this, "Ostrzeżenie", "Nie zanznaczono pozycji do edycji" );
+
+        return;
+    }
+
+    if( m_eQuestionType == OPEN_QUESTION )
+    {
+        OpenQuestion * openQuestion = dynamic_cast< OpenQuestion * >( m_pQuestion );
+        openQuestion->deleteKeyWord( ui->m_pAnswersListWidget->currentRow() );
+
+    }
+    else if( m_eQuestionType == CLOSE_QUESTION )
+    {
+        CloseQuestion * closeQuestion = dynamic_cast< CloseQuestion * >( m_pQuestion );
+        closeQuestion->deleteAnswer( ui->m_pAnswersListWidget->currentRow() );
+    }
+
+    ui->m_pAnswersListWidget->takeItem( ui->m_pAnswersListWidget->currentRow() );
+}
+
+void AddQuestionDialog::editAnswerFromListWidget()
+{
+    if( ui->m_pAnswersListWidget->selectedItems().size() < 1 )
+    {
+        QMessageBox::warning( this, "Ostrzeżenie", "Nie zanznaczono pozycji do edycji" );
+
+        return;
+    }
+
+    m_iRowToEditInAnswerListWidget = ui->m_pAnswersListWidget->currentRow();
+
+    if( m_eQuestionType == OPEN_QUESTION )
+    {
+        OpenQuestion * openQuestion = dynamic_cast< OpenQuestion * >( m_pQuestion );
+
+        ui->m_pKeyWordLineEdit->setText( openQuestion->getKeyWord( ui->m_pAnswersListWidget->currentRow() ).keyWord() );
+        ui->m_pKeyWordWeightSpinBox->setValue( openQuestion->getKeyWord( ui->m_pAnswersListWidget->currentRow() ).weight() );
+        setKeyWordPage();
+    }
+    else if( m_eQuestionType == CLOSE_QUESTION )
+    {
+        ui->m_pAnswerTextEdit->setText( ui->m_pAnswersListWidget->currentItem()->text() );
+        setAnswerPage();
+    }
 }

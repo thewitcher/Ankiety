@@ -21,6 +21,8 @@ private:
 
 private slots:
     void showAddQuestionDialog();
+    void showCreateSurveyDialog();
+    void showCompleteSurveyDialog();
 };
 
 #endif // MAINWINDOW_H
